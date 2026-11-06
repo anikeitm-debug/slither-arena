@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Slither Arena</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0f1a;--card:#141b2e;--ink:#eaf0ff;--mut:#8fa0c8;--a:#00e5ff;--b:#ff3d81;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{position:fixed;inset:0;display:block;cursor:crosshair}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,8,16,.55);z-index:5}
+.ov.hide,.hide{display:none}
+.card{background:var(--card);border:1px solid #26314f;border-radius:18px;padding:22px 26px;width:min(420px,92vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:92vh;overflow:auto}
+h1{margin:0 0 4px;font-size:46px;font-weight:900;letter-spacing:2px;color:#fff;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 5px 0 #000,0 0 28px var(--a)}#menu{background:rgba(5,8,16,.1)}#menu .card{background:none;border:0;box-shadow:none}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+input{width:100%;box-sizing:border-box;padding:11px 14px;border-radius:10px;border:1px solid #2c3a60;background:#0d1426;color:var(--ink);font-size:16px;text-align:center;outline:none}
+input:focus{border-color:var(--a)}
+.sk{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.sw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.sw.on{border-color:#fff;transform:scale(1.15)}
+button{font:inherit;cursor:pointer;border:3px solid #000;border-radius:10px;padding:13px 16px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000;background:linear-gradient(#37d7ff,#0a78d6);box-shadow:0 5px 0 #05223f,0 0 18px rgba(0,200,255,.45);width:100%;margin-top:12px;font-size:17px;transition:transform .12s}button:hover{transform:translateY(-2px) scale(1.03)}button:active{transform:translateY(3px);box-shadow:0 2px 0 #05223f}
+button.d{background:linear-gradient(#ff7ab0,#d6196a);box-shadow:0 5px 0 #4a0526,0 0 18px rgba(255,60,140,.5)}
+button.g{background:linear-gradient(#ffe45c,#e6a100);box-shadow:0 5px 0 #4d3300}
+.row{display:flex;gap:8px}.row button{margin-top:0}
+.tg.on{outline:2px solid #fff}
+.info{font-size:12px;color:var(--mut);margin-top:12px;line-height:1.5}
+.pill{display:inline-block;background:#0d1426;border:1px solid #2c3a60;border-radius:99px;padding:3px 10px;font-size:12px;color:var(--a);margin-top:8px}
+#hud{position:fixed;left:14px;top:12px;z-index:3;font-weight:700;pointer-events:none;text-shadow:0 2px 6px #000}
+#hud small{display:block;color:var(--mut);font-weight:500}
+#big{font-size:30px}
+
+/* Touch Controls */
+.mobile-controls {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.joystick-zone {
+  position: absolute;
+  bottom: 25px;
+  left: 25px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+}
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  margin-top: -25px;
+  margin-left: -25px;
+  background: radial-gradient(circle, var(--a), #0a78d6);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  transform: translate(0px, 0px);
+  pointer-events: none;
+}
+.boost-btn {
+  position: absolute;
+  bottom: 35px;
+  right: 25px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff7ab0, #d6196a);
+  border: 3px solid #fff;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px #000;
+  box-shadow: 0 0 16px rgba(255, 60, 140, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+}
+.boost-btn:active {
+  transform: scale(0.92);
+}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud" class="hide"><div id="big">0</div><small>Use Joystick & Boost</small></div>
+
+<div id="controls" class="mobile-controls hide">
+  <div class="joystick-zone" id="joyZone">
+    <div class="joystick-knob" id="joyKnob"></div>
+  </div>
+  <div class="boost-btn" id="joyBoost">BOOST</div>
+</div>
+
+<div id="menu" class="ov"><div class="card">
+<h1>SLITHER ARENA</h1><div class="sub">Eat, grow and trap other snakes</div>
+<input id="nm" maxlength="14" placeholder="Your nickname">
+<div class="sk" id="sk"></div>
+<button id="bPlay">▶ Play Arena</button>
+<button id="bDuel" class="d">⚔ 1v1 Duel</button>
+<button id="bHelp" class="g">How to play</button>
+<div class="pill" id="pl">Players in lobby: 1</div>
+<div class="info" id="best">Best score: 0</div>
+</div></div>
+
+<div id="duelp" class="ov hide"><div class="card">
+<h1>1v1 DUEL</h1><div class="sub">Small arena. First to 3 round wins.</div>
+<div class="row"><button class="g tg on" id="dE">Easy bot</button><button class="g tg" id="dH">Hard bot</button></div>
+<button id="dGo" class="d">Fight a bot</button><button id="dOn">🌐 Online 1v1</button>
+<button id="dBack" class="g">Back</button>
+<div class="info">Cut your rival off with your body. Head-on crashes are a draw.</div>
+</div></div>
+
+<div id="help" class="ov hide"><div class="card">
+<h1>HOW TO PLAY</h1>
+<div class="info" style="font-size:14px;color:var(--ink)">
+Steer with the <b>Joystick</b> (on mobile) or <b>Mouse</b>.<br>
+Press the <b>Boost Button</b>, hold <b>Click</b>, or <b>Space</b> to boost (burns length).<br>
+Eat glowing pellets to grow.<br>Hit another snake’s body or the red wall and you pop.<br>
+Dead snakes drop lots of food.<br><br>
+<b>Multiplayer:</b> open this page in a second tab or window on the same device and both snakes share one arena live.<br>
+<b>Duel:</b> a private arena against a bot.
+</div>
+<button id="hBack" class="g">Back</button>
+</div></div>
+
+<div id="srch" class="ov hide"><div class="card"><h1 style="font-size:28px">ONLINE 1v1</h1><div class="sub" id="st"></div><button id="sBack" class="g">Cancel</button></div></div>
+<div id="over" class="ov hide"><div class="card">
+<h1 id="ot">GAME OVER</h1><div class="sub" id="os"></div>
+<button id="oAgain">Play again</button>
+<button id="oMenu" class="g">Main menu</button>
+</div></div>
+
+<script>
+const cv=document.getElementById('c'),g=cv.getContext('2d'),$=id=>document.getElementById(id);
+let W,H;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+const SK=[['#ff3d81','#ffb3d1'],['#00e5ff','#0077a8'],['#7cfc00','#2e7d00'],['#ffd600','#ff6d00'],['#b388ff','#5a2bc4'],['#ffffff','#607d8b']];
+const NAMES=['Viper','Noodle','Mamba','Zig','Coil','Slinky','Cobra','Pixel','Rattle','Python','Wiggle','Boa','Ninja','Comet','Blaze','Ziggy','Fang','Sidewinder','Jelly','Nova','Rex','Luna'];
+const SP=6;let ws=null,online=false,wasOnline=false,side=0,oppName='',ms=null;
+let skin=0,mode='ffa',state='menu',R=2600,me,snakes=[],food=[],mouse={x:0,y:0},boost=false,cam={x:0,y:0,z:1},best=0,duel,hard=false,frame=0,lastName='Player';
+let joyActive=false, joyAngle=0;
+
+try{best=+localStorage.getItem('sa_best')||0;lastName=localStorage.getItem('sa_name')||''}catch(e){}
+$('nm').value=lastName;$('best').textContent='Best score: '+best;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rad=l=>7+Math.min(l,400)*0.022;
+const angd=d=>Math.atan2(Math.sin(d),Math.cos(d));
+
+/* ---------- multiplayer ---------- */
+const myId=Math.random().toString(36).slice(2),remotes={};
+const bc=('BroadcastChannel' in window)?new BroadcastChannel('slither-arena-v1'):null;
+const lobby={};
+if(bc)bc.onmessage=e=>{const m=e.data;if(!m||m.id===myId)return;
+ if(m.t==='dead'){delete remotes[m.id];return}
+ if(m.t==='hi'){lobby[m.id]=performance.now();return}
+ if(m.t==='s'&&state==='play'&&mode==='ffa'){
+  const sg=[];for(let i=0;i<m.p.length;i+=2)sg.push({x:m.p[i],y:m.p[i+1]});
+  if(sg.length<2)return;
+  remotes[m.id]={id:m.id,name:m.n,sk:m.k,seg:sg,len:m.l,r:rad(m.l),alive:true,remote:true,x:sg[0].x,y:sg[0].y,a:Math.atan2(sg[0].y-sg[1].y,sg[0].x-sg[1].x),seen:performance.now(),boost:m.b};
+ }};
+function ping(){if(bc)bc.postMessage({t:'hi',id:myId});const n=performance.now();let c=1;for(const k in lobby){if(n-lobby[k]>3500)delete lobby[k];else c++}$('pl').textContent='Players in lobby: '+c}
+setInterval(ping,1500);ping();
+
+/* ---------- snakes ---------- */
+function mk(x,y,a,sk,name,bot,len){
+ const s={x,y,a,ta:a,sk,name,bot,len,seg:[],boost:false,alive:true,r:rad(len),th:0,hunt:false};
+ for(let i=0;i<len;i++)s.seg.push({x:x-Math.cos(a)*i*SP,y:y-Math.sin(a)*i*SP});
+ return s}
+function addBot(){
+ const a=rnd(0,6.28),d=rnd(0,R*.8);
+ const s=mk(Math.cos(a)*d,Math.sin(a)*d,rnd(0,6.28),SK[(Math.random()*SK.length)|0],NAMES[(Math.random()*NAMES.length)|0],true,rnd(10,40)|0);
+ snakes.push(s);return s}
+function spawnFood(n){
+ for(let i=0;i<n;i++){const a=rnd(0,6.28),d=Math.sqrt(Math.random())*(R-40),big=Math.random()<.12;
+  food.push({x:Math.cos(a)*d,y:Math.sin(a)*d,c:'hsl('+((Math.random()*360)|0)+',90%,60%)',v:big?2:1,r:big?7:4.5})}}
+function move(s){
+ const tr=0.085-Math.min(s.len,300)*0.00015;
+ s.a+=Math.max(-tr,Math.min(tr,angd(s.ta-s.a)));
+ const b=s.boost&&s.len>14,sp=b?3.8:2.1;
+ if(b){s.len-=0.07;if(Math.random()<.25&&s.seg.length>3){const t=s.seg[s.seg.length-1];food.push({x:t.x,y:t.y,c:s.sk[0],v:.5,r:3})}}
+ s.x+=Math.cos(s.a)*sp;s.y+=Math.sin(s.a)*sp;
+ const n=Math.floor(s.len);
+ while(s.seg.length<n){const t=s.seg[s.seg.length-1];s.seg.push({x:t.x,y:t.y})}
+ while(s.seg.length>n&&s.seg.length>3)s.seg.pop();
+ s.seg[0].x=s.x;s.seg[0].y=s.y;
+ for(let i=1;i<s.seg.length;i++){const p=s.seg[i-1],q=s.seg[i],dx=p.x-q.x,dy=p.y-q.y,dd=Math.hypot(dx,dy);if(dd>SP){q.x+=dx/dd*(dd-SP);q.y+=dy/dd*(dd-SP)}}
+ s.r=rad(s.len)}
+function eat(s){
+ for(let i=food.length-1;i>=0;i--){const f=food[i],dx=f.x-s.x,dy=f.y-s.y,rr=s.r+f.r+(s===me?10:6);
+  if(dx*dx+dy*dy<rr*rr){s.len+=f.v*.5;food.splice(i,1);if(mode==='ffa'&&food.length<300)spawnFood(1)}}}
+function die(s){
+ if(!s.alive)return;s.alive=false;
+ for(let i=0;i<s.seg.length;i+=2)food.push({x:s.seg[i].x+rnd(-8,8),y:s.seg[i].y+rnd(-8,8),c:s.sk[i%2],v:1.5,r:6});
+ if(s===me){if(bc)bc.postMessage({t:'dead',id:myId});if(mode==='ffa')setTimeout(()=>endGame(false),900)}
+ else if(s.bot&&mode==='ffa')setTimeout(()=>{snakes=snakes.filter(o=>o!==s);if(state==='play')addBot()},2500)}
+function others(s){return snakes.concat(Object.values(remotes))}
+function think(s){
+ s.th++;if(s.th%(s.fast?3:(hard?8:13)))return;
+ if(Math.hypot(s.x,s.y)>R-260){s.ta=Math.atan2(-s.y,-s.x);s.boost=false;return}
+ for(const o of others()){if(o===s||!o.alive)continue;
+  for(let j=0;j<o.seg.length;j+=3){const dx=o.seg[j].x-s.x,dy=o.seg[j].y-s.y,lim=90+o.r*2;
+   if(dx*dx+dy*dy<lim*lim){const df=angd(Math.atan2(dy,dx)-s.a);if(Math.abs(df)<1.3){s.ta=s.a-Math.sign(df||1)*1.4;s.boost=false;return}}}}
+ if(s.hunt&&me&&me.alive&&s.len>me.len*.9){
+  const px=me.x+Math.cos(me.a)*90,py=me.y+Math.sin(me.a)*90;
+  s.ta=Math.atan2(py-s.y,px-s.x);s.boost=s.len>20&&Math.hypot(px-s.x,py-s.y)<260;return}
+ let best=1e9,bf=null;
+ for(const f of food){const dx=f.x-s.x,dy=f.y-s.y,dd=dx*dx+dy*dy;if(dd<best){best=dd;bf=f}}
+ if(bf)s.ta=Math.atan2(bf.y-s.y,bf.x-s.x);
+ s.boost=false}
+
+/* ---------- game flow ---------- */
+function show(id,v){$(id).classList.toggle('hide',!v)}
+function start(m){
+ mode=m;online=false;state='play';food=[];snakes=[];
+ const nm=($('nm').value||'Player').trim().slice(0,14);
+ try{localStorage.setItem('sa_name',nm)}catch(e){}
+ for(const k in remotes)delete remotes[k];
+if(m==='ffa'){R=2600;me=mk(rnd(-300,300),rnd(-300,300),rnd(0,6.28),SK[skin],nm,false,14);snakes.push(me);spawnFood(300);for(let i=0;i<22;i++)addBot()}
+ else{R=700;duel={me:0,bot:0,round:1,wait:0,msg:''};resetDuel(nm)}
+ me.name=nm;cam.x=me.x;cam.y=me.y;cam.z=1;
+ ['menu','duelp','help','over','srch'].forEach(i=>show(i,false));show('hud',true);show('controls',true)}
+function resetDuel(nm){if(!online)return resetDuelOld(nm);food=[];spawnFood(90);delete remotes.opp;me=mk(side?R*.55:-R*.55,0,side?Math.PI:0,SK[skin],nm||me.name,false,20);snakes=[me];duel.msg=''}
+function resetDuelOld(nm){
+ food=[];spawnFood(90);
+ const n=nm||me.name;
+ me=mk(-R*.55,0,0,SK[skin],n,false,20);
+ const bs=SK[(skin+2)%SK.length];
+ const bot=mk(R*.55,0,Math.PI,bs,hard?'Hard Bot':'Easy Bot',true,20);
+ bot.hunt=hard;bot.fast=hard;
+ snakes=[me,bot];duel.msg=''}
+function endGame(win){wasOnline=online;if(ws){ws.onclose=null;ws.close();ws=null}
+ state='over';show('hud',false);show('controls',false);
+ const sc=Math.floor(me.len);
+ if(mode==='ffa'){if(sc>best){best=sc;try{localStorage.setItem('sa_best',best)}catch(e){}}
+  $('ot').textContent='YOU POPPED';$('os').textContent='Final length: '+sc+'  ·  Best: '+best}
+ else{$('ot').textContent=win?'YOU WIN!':'DEFEATED';$('os').textContent='Duel result '+duel.me+' – '+duel.bot}
+ $('best').textContent='Best score: '+best;show('over',true)}
+function toMenu(){if(ws){ws.onclose=null;ws.close();ws=null}state='menu';['over','duelp','help','hud','srch','controls'].forEach(i=>show(i,false));show('menu',true)}
+
+/* ---------- update ---------- */
+function update(){
+ if(state!=='play')return;
+ frame++;
+ if(joyActive){
+  me.ta=joyAngle;
+ } else {
+  me.ta=Math.atan2(mouse.y-H/2,mouse.x-W/2);
+ }
+ me.boost=boost;
+ for(const s of snakes)if(s.alive){if(s.bot)think(s);move(s);eat(s)}
+ const now=performance.now();
+ for(const k in remotes)if(now-remotes[k].seen>1500)delete remotes[k];
+ const all=others();
+ for(const s of snakes){if(!s.alive)continue;
+  if(Math.hypot(s.x,s.y)>R-s.r){die(s);continue}
+  for(const o of all){if(o===s||!o.alive)continue;
+   const lim=o.r+s.r*.6,l2=lim*lim;
+   for(let j=1;j<o.seg.length;j+=3){const dx=o.seg[j].x-s.x,dy=o.seg[j].y-s.y;if(dx*dx+dy*dy<l2){die(s);break}}
+   if(!s.alive)break}
+ }
+ if(online&&ws&&ws.readyState===1&&me.alive&&frame%6===0)ws.send(JSON.stringify({t:'s',n:me.name,k:skin,l:me.len,b:me.boost,p:me.seg.flatMap(q=>[Math.round(q.x),Math.round(q.y)])}));
+ if(bc&&mode==='ffa'&&me.alive&&frame%4===0){
+  const p=[];for(const q of me.seg){p.push(Math.round(q.x),Math.round(q.y))}
+  bc.postMessage({t:'s',id:myId,n:me.name,k:me.sk,l:me.len,b:me.boost,p})}
+ if(mode==='duel'){
+  const bot=online?{alive:true}:snakes[1];
+  if(duel.wait>0){duel.wait--;
+   if(duel.wait===0){if(duel.me>=3||duel.bot>=3){endGame(duel.me>=3)}else{duel.round++;resetDuel()}}}
+  else if(online){if(!me.alive){duel.bot++;duel.msg='Round lost';duel.wait=110;if(ws&&ws.readyState===1)ws.send('{"t":"dead"}')}}
+  else if(!me.alive||!bot.alive){
+   if(me.alive){duel.me++;duel.msg='Round won!'}else if(bot.alive){duel.bot++;duel.msg='Round lost'}else duel.msg='Draw';
+   duel.wait=110}}
+ $('big').textContent=Math.floor(me.len)}
+
+/* ---------- render ---------- */
+function hexGrid(cx,cy,hw,hh){
+ const s=46,w=Math.sqrt(3)*s,v=1.5*s;
+ const r0=Math.floor((cy-hh)/v)-1,r1=Math.ceil((cy+hh)/v)+1,c0=Math.floor((cx-hw)/w)-1,c1=Math.ceil((cx+hw)/w)+1;
+ g.lineWidth=2;g.strokeStyle='rgba(110,150,255,.22)';
+ for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+  const x=c*w+(r&1?w/2:0),y=r*v;
+  g.beginPath();for(let k=0;k<6;k++){const a=Math.PI/3*k+Math.PI/6;g.lineTo(x+Math.cos(a)*(s-2),y+Math.sin(a)*(s-2))}g.closePath();
+  g.fillStyle='rgba(70,100,200,'+(.05+((r*5+c*3)&3)*.025)+')';g.fill();g.stroke()}}
+function drawSnake(s){
+ const n=s.seg.length,bst=s.boost&&s.len>14;
+ const P=()=>{g.beginPath();g.moveTo(s.seg[0].x,s.seg[0].y);for(let i=1;i<n;i++)g.lineTo(s.seg[i].x,s.seg[i].y)};
+ g.lineCap='round';g.lineJoin='round';
+ g.shadowColor=s.sk[0];g.shadowBlur=bst?55:28;
+ P();g.strokeStyle=s.sk[1];g.lineWidth=s.r*2.15;g.stroke();
+ g.shadowBlur=0;
+ P();g.strokeStyle=s.sk[0];g.lineWidth=s.r*1.75;g.stroke();
+ P();g.setLineDash([SP*2.2,SP*2.2]);g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=s.r*1.1;g.stroke();g.setLineDash([]);
+ const h=s.seg[0],er=s.r*.46,look=s.ta!==undefined?s.ta:s.a;
+ for(const sd of[-1,1]){
+  const ox=h.x+Math.cos(s.a+sd*.8)*s.r*.55,oy=h.y+Math.sin(s.a+sd*.8)*s.r*.55;
+  g.shadowColor='#fff';g.shadowBlur=10;g.fillStyle='#fff';g.beginPath();g.arc(ox,oy,er,0,6.3);g.fill();g.shadowBlur=0;
+  const px=ox+Math.cos(look)*er*.45,py=oy+Math.sin(look)*er*.45;
+  g.fillStyle='#10131f';g.beginPath();g.arc(px,py,er*.58,0,6.3);g.fill();
+  g.fillStyle='#fff';g.beginPath();g.arc(px-er*.15,py-er*.2,er*.18,0,6.3);g.fill()}
+ g.fillStyle='rgba(255,255,255,.85)';g.font='600 13px system-ui';g.textAlign='center';
+ g.fillText(s.name||'',h.x,h.y-s.r-10)}
+function drawMenuBg(t){
+ cam.x=W/2;cam.y=H/2;cam.z=1;
+ g.setTransform(1,0,0,1,0,0);g.fillStyle='#070b16';g.fillRect(0,0,W,H);
+ hexGrid(W/2,H/2,W/2,H/2);
+ if(!ms){ms=[];for(let i=0;i<8;i++){const s=mk(rnd(0,W),rnd(0,H),rnd(0,6.28),SK[i%6],'',true,rnd(40,90)|0);s.ph=rnd(0,9);ms.push(s)}}
+ for(const s of ms){s.ta=s.a+Math.sin(t/700+s.ph)*.9;
+  if(s.x<-150||s.x>W+150||s.y<-150||s.y>H+150)s.ta=Math.atan2(H/2-s.y,W/2-s.x);
+  move(s);drawSnake(s)}}
+function render(t){
+ g.setTransform(1,0,0,1,0,0);
+ if(state==='menu'){drawMenuBg(t);requestAnimationFrame(render);return}
+ g.fillStyle='#05070d';g.fillRect(0,0,W,H);
+ const tz=Math.max(.45,1-(me.len-10)*.0012);cam.z+=(tz-cam.z)*.05;
+ cam.x+=(me.x-cam.x)*.15;cam.y+=(me.y-cam.y)*.15;
+ g.setTransform(cam.z,0,0,cam.z,W/2-cam.x*cam.z,H/2-cam.y*cam.z);
+ g.fillStyle='#0f1526';g.beginPath();g.arc(0,0,R,0,6.3);g.fill();
+ const hw=W/cam.z/2,hh=H/cam.z/2;g.save();g.beginPath();g.arc(0,0,R,0,6.3);g.clip();hexGrid(cam.x,cam.y,hw,hh);g.restore();
+ g.strokeStyle='#ff2d55';g.lineWidth=14;g.shadowColor='#ff2d55';g.shadowBlur=30;g.beginPath();g.arc(0,0,R+7,0,6.3);g.stroke();g.shadowBlur=0;
+ for(const f of food){if(Math.abs(f.x-cam.x)>hw+20||Math.abs(f.y-cam.y)>hh+20)continue;
+  g.fillStyle=f.c;g.globalAlpha=.25;g.beginPath();g.arc(f.x,f.y,f.r*2,0,6.3);g.fill();
+  g.globalAlpha=1;g.beginPath();g.arc(f.x,f.y,f.r,0,6.3);g.fill()}
+ const all=others().filter(s=>s.alive).sort((a,b)=>a.len-b.len);
+ for(const s of all)drawSnake(s);
+ g.setTransform(1,0,0,1,0,0);hud(all)
+ requestAnimationFrame(render)}
+function hud(all){
+ const lb=all.slice().sort((a,b)=>b.len-a.len).slice(0,6);
+ g.textAlign='left';g.font='700 14px system-ui';
+ if(mode==='ffa'){
+  g.fillStyle='rgba(10,14,28,.6)';g.fillRect(W-190,10,180,28+lb.length*20);
+  g.fillStyle='#8fa0c8';g.fillText('LEADERBOARD',W-180,30);
+  lb.forEach((s,i)=>{g.fillStyle=s===me?'#00e5ff':'#eaf0ff';g.fillText((i+1)+'. '+(s.name||'?').slice(0,11)+(s.remote?' ●':''),W-180,52+i*20);g.textAlign='right';g.fillText(Math.floor(s.len),W-18,52+i*20);g.textAlign='left'})}
+ const mr=58,mx=W-mr-14,my=H-mr-14;
+ g.fillStyle='rgba(10,14,28,.65)';g.beginPath();g.arc(mx,my,mr,0,6.3);g.fill();
+ g.strokeStyle='#ff2d55';g.lineWidth=2;g.stroke();
+ for(const s of all){g.fillStyle=s===me?'#fff':s.sk[0];g.beginPath();g.arc(mx+s.x/R*mr,my+s.y/R*mr,s===me?3.5:2,0,6.3);g.fill()}
+ if(mode==='duel'){
+  g.textAlign='center';g.font='800 26px system-ui';g.fillStyle='#fff';
+  g.fillText('YOU '+duel.me+'  —  '+duel.bot+'  '+(online?oppName.toUpperCase():snakes[1]?snakes[1].name.toUpperCase():''),W/2,40);
+  g.font='600 14px system-ui';g.fillStyle='#8fa0c8';g.fillText('Round '+duel.round+'  ·  first to 3',W/2,60);
+  if(duel.wait>0){g.font='800 44px system-ui';g.fillStyle='#ffd600';g.fillText(duel.msg,W/2,H/2)}}}
+
+/* ---------- input & UI ---------- */
+addEventListener('mousemove',e=>{if(!joyActive){mouse.x=e.clientX;mouse.y=e.clientY}});
+cv.addEventListener('mousedown',()=>boost=true);addEventListener('mouseup',()=>boost=false);
+addEventListener('keydown',e=>{if(e.code==='Space'&&state==='play'){boost=true;e.preventDefault()}});
+addEventListener('keyup',e=>{if(e.code==='Space')boost=false});
+
+/* Touch & Joystick Handling */
+const joyZone=$('joyZone'), joyKnob=$('joyKnob'), joyBoost=$('joyBoost');
+let joyTouchId=null;
+
+joyZone.addEventListener('touchstart', e=>{
+ const t=e.changedTouches[0];
+ joyTouchId=t.identifier;
+ joyActive=true;
+ updateJoystick(t);
+ e.preventDefault();
+},{passive:false});
+
+joyZone.addEventListener('touchmove', e=>{
+ for(let i=0;i<e.changedTouches.length;i++){
+  if(e.changedTouches[i].identifier===joyTouchId){
+   updateJoystick(e.changedTouches[i]);
+   break;
+  }
+ }
+ e.preventDefault();
+},{passive:false});
+
+const endJoy = e=>{
+ for(let i=0;i<e.changedTouches.length;i++){
+  if(e.changedTouches[i].identifier===joyTouchId){
+   joyTouchId=null;
+   joyActive=false;
+   joyKnob.style.transform='translate(0px, 0px)';
+   break;
+  }
+ }
+};
+joyZone.addEventListener('touchend', endJoy);
+joyZone.addEventListener('touchcancel', endJoy);
+
+function updateJoystick(touch){
+ const rect=joyZone.getBoundingClientRect();
+ const cx=rect.left+rect.width/2;
+ const cy=rect.top+rect.height/2;
+ const dx=touch.clientX-cx;
+ const dy=touch.clientY-cy;
+ const maxR=rect.width/2;
+ const dist=Math.hypot(dx,dy);
+ joyAngle=Math.atan2(dy,dx);
+ const clampedDist=Math.min(dist,maxR);
+ const kx=Math.cos(joyAngle)*clampedDist;
+ const ky=Math.sin(joyAngle)*clampedDist;
+ joyKnob.style.transform=`translate(${kx}px, ${ky}px)`;
+}
+
+joyBoost.addEventListener('touchstart', e=>{boost=true;e.preventDefault();},{passive:false});
+joyBoost.addEventListener('touchend', e=>{boost=false;e.preventDefault();},{passive:false});
+joyBoost.addEventListener('touchcancel', e=>{boost=false;e.preventDefault();},{passive:false});
+
+const skb=$('sk');
+SK.forEach((c,i)=>{const d=document.createElement('div');d.className='sw'+(i===0?' on':'');d.style.background='linear-gradient(135deg,'+c[0]+','+c[1]+')';
+ d.onclick=()=>{skin=i;[...skb.children].forEach((x,j)=>x.classList.toggle('on',j===i))};skb.appendChild(d)});
+$('bPlay').onclick=()=>start('ffa');
+$('bDuel').onclick=()=>{show('menu',false);show('duelp',true)};
+$('bHelp').onclick=()=>{show('menu',false);show('help',true)};
+$('hBack').onclick=()=>{show('help',false);show('menu',true)};
+$('dBack').onclick=()=>{show('duelp',false);show('menu',true)};
+$('dE').onclick=()=>{hard=false;$('dE').classList.add('on');$('dH').classList.remove('on')};
+$('dH').onclick=()=>{hard=true;$('dH').classList.add('on');$('dE').classList.remove('on')};
+$('dGo').onclick=()=>start('duel');
+$('oAgain').onclick=()=>{if(wasOnline)goOnline();else start(mode)};
+$('oMenu').onclick=toMenu;
+function srchFail(msg){if(ws){ws.onclose=null;ws=null}$('st').textContent=msg||'No game server found. Download server.js + this page, run: npm i ws, node server.js, then open http://localhost:3000'}
+function goOnline(){
+ const nm=($('nm').value||'Player').trim().slice(0,14);
+ ['duelp','menu','over'].forEach(i=>show(i,false));show('srch',true);$('st').textContent='Connecting…';
+ try{ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host)}catch(e){return srchFail()}
+ const w=ws;
+ w.onopen=()=>{$('st').textContent='Searching for an opponent…';w.send(JSON.stringify({t:'q',n:nm,k:skin}))};
+ w.onerror=()=>{if(state!=='play')srchFail()};
+ w.onclose=()=>{if(state==='play'&&online)endGame(true);else if(state!=='play')srchFail('Disconnected.')};
+ w.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}
+  if(m.t==='match'){side=m.side;oppName=m.n||'Opponent';mode='duel';online=true;state='play';R=700;duel={me:0,bot:0,round:1,wait:0,msg:''};for(const k in remotes)delete remotes[k];resetDuel(nm);cam.x=me.x;cam.y=me.y;cam.z=1;show('srch',false);show('hud',true);show('controls',true)}
+  else if(m.t==='s'&&state==='play'&&online){
+   const sg=[];for(let i=0;i<m.p.length;i+=2)sg.push({x:m.p[i],y:m.p[i+1]});if(sg.length<2)return;
+   const existing = remotes.opp;
+   const targetX = sg[0].x, targetY = sg[0].y;
+   const curX = existing ? existing.x + (targetX - existing.x) * 0.4 : targetX;
+   const curY = existing ? existing.y + (targetY - existing.y) * 0.4 : targetY;
+   remotes.opp={id:'opp',name:oppName,sk:SK[m.k]||SK[1],seg:sg,len:m.l,r:rad(m.l),alive:true,remote:true,x:curX,y:curY,a:Math.atan2(targetY-targetY,targetX-targetX),seen:performance.now(),boost:m.b}
+  }
+  else if(m.t==='dead'&&state==='play'&&online){delete remotes.opp;if(duel.wait>0&&!me.alive){duel.bot--;duel.msg='Draw'}else if(duel.wait===0){duel.me++;duel.msg='Round won!';duel.wait=110}}
+  else if(m.t==='left'&&state==='play'&&online){endGame(true)}}}
+$('dOn').onclick=goOnline;
+$('sBack').onclick=()=>{if(ws){ws.onclose=null;ws.close();ws=null}show('srch',false);show('menu',true)};
+setInterval(update,1000/60);
+requestAnimationFrame(render);
+</script></body></html>
